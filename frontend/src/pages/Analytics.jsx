@@ -56,10 +56,13 @@ export default function Analytics() {
 
   // Derive completion distribution from average progress
   const avgProgress = overview?.average_progress ?? 0;
+  const completedPct = Math.round(avgProgress >= 90 ? 100 : avgProgress * 0.5);
+  const inProgressPct = Math.round(avgProgress > 0 && avgProgress < 90 ? 100 - avgProgress : 0);
+  const notStartedPct = Math.max(0, 100 - completedPct - inProgressPct);
   const pieData = [
-    { name: 'Completed',    value: Math.round(avgProgress >= 90 ? 100 : avgProgress * 0.5) },
-    { name: 'In Progress',  value: Math.round(avgProgress < 90 && avgProgress > 0 ? 100 - avgProgress : 0) },
-    { name: 'Not Started',  value: Math.max(0, 100 - Math.round(avgProgress >= 90 ? 100 : avgProgress * 0.5) - Math.round(avgProgress < 90 && avgProgress > 0 ? 100 - avgProgress : 0)) },
+    { name: 'Completed',   value: completedPct },
+    { name: 'In Progress', value: inProgressPct },
+    { name: 'Not Started', value: notStartedPct },
   ].filter(d => d.value > 0);
 
   return (

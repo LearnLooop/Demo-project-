@@ -1,8 +1,10 @@
 import asyncio
+import json
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from datetime import datetime
 from dotenv import load_dotenv
@@ -31,9 +33,7 @@ async def seed_database():
 
     async with async_session_maker() as db:
         # ------ Users ------
-        existing = await db.execute(
-            __import__("sqlalchemy", fromlist=["select"]).select(User)
-        )
+        existing = await db.execute(select(User))
         if existing.scalars().first():
             print("Database already seeded – skipping.")
             return
@@ -132,7 +132,6 @@ async def seed_database():
         ])
 
         # Quiz for course 1
-        import json as _json
         quiz1 = Quiz(id="quiz1", title="Core Concepts Quiz", time_limit=90, pass_threshold=70.0)
         db.add(quiz1)
         await db.flush()
@@ -163,7 +162,7 @@ async def seed_database():
                 id=qid,
                 quiz_id=quiz1.id,
                 text=text,
-                options=_json.dumps(options),
+                options=json.dumps(options),
                 correct_index=correct_idx,
                 explanation=explanation,
             )

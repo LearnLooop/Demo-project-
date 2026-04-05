@@ -59,7 +59,7 @@ async def get_analytics_overview(
         at_risk = 0
 
     # 4. Enrollment trend: count new enrollments per month for the last 6 months
-    month_counts: dict = defaultdict(int)
+    month_counts: defaultdict = defaultdict(int)
     for e in enrollments:
         key = (e.enrolled_at.year, e.enrolled_at.month)
         month_counts[key] += 1
@@ -88,7 +88,7 @@ async def get_analytics_overview(
         quiz_res = await db.execute(quiz_stmt)
         recent_quizzes = quiz_res.scalars().all()
 
-        week_scores: dict = defaultdict(list)
+        week_scores: defaultdict = defaultdict(list)
         for qr in recent_quizzes:
             week_key = qr.completed_at.strftime("%Y-W%W")
             week_scores[week_key].append(qr.score)
