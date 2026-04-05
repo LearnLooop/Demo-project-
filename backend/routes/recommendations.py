@@ -37,22 +37,15 @@ async def get_recommendations(
     # Generate recommendations for each weak competency
     for progress, comp in weak_comps:
         # Find chapters that teach this competency
-        ch_stmt = select(Chapter, Course.id, Course.title).\
-                  join(Course, Course.units.any(id=Chapter.unit_id)).\
-                  join(chapter_competency, chapter_competency.c.chapter_id == Chapter.id).\
-                  where(chapter_competency.c.competency_id == comp.id)
-                  
         try:
-            # We must jump through chapter -> unit -> course in standard SQL. 
-            # In SQLAlchemy, it's easier to join Course over Chapter.unit_id.
             from db.models import Unit
-            ch_stmt_correct = select(Chapter, Course).\
+            ch_stmt = select(Chapter, Course).\
                 join(Unit, Chapter.unit_id == Unit.id).\
                 join(Course, Unit.course_id == Course.id).\
                 join(chapter_competency, chapter_competency.c.chapter_id == Chapter.id).\
                 where(chapter_competency.c.competency_id == comp.id)
-                
-            ch_res = await db.execute(ch_stmt_correct)
+
+            ch_res = await db.execute(ch_stmt)
             chapters_found = ch_res.all()
             
             for chapter, course in chapters_found:

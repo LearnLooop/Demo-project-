@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 from database import get_db
 from db.models import User
@@ -90,3 +90,29 @@ async def update_password(
     user.password_hash = hash_password(payload.new_password)
     await db.commit()
     return {"status": "success", "message": "Password updated successfully"}
+
+@router.get("/admin/list", response_model=List[UserResponse])
+async def list_all_users(
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all users in the system. Admin access only."""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    result = await db.execute(select(User))
+    users = result.scalars().all()
+    return [
+        UserResponse(
+            user_id=u.id,
+            email=u.email,
+            name=u.name,
+            role=u.role.value,
+            avatar=u.avatar,
+            bio=u.bio,
+            created_at=u.created_at,
+        )
+        for u in users
+    ]

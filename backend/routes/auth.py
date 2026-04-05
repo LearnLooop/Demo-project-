@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
 
-from schemas import UserLogin, UserRegister, Token, UserResponse
+from schemas import UserLogin, UserRegister, Token, UserResponse, RefreshRequest
 from utils.auth import hash_password, verify_password, create_access_token, create_refresh_token, get_current_user
 from database import get_db
 from db.models import User, UserRole
@@ -80,10 +80,10 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     )
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(refresh_token: str):
+async def refresh_token(request: RefreshRequest):
     """Refresh access token using refresh token"""
     from utils.auth import verify_token
-    token_data = verify_token(refresh_token)
+    token_data = verify_token(request.refresh_token)
     
     new_token_data = {
         "sub": token_data.user_id,

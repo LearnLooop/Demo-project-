@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Shield, Users, BookOpen } from 'lucide-react';
+import { Shield, Users } from 'lucide-react';
 
 export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function fetchAdminData() {
       try {
-        // In reality, this would hit an admin-only endpoint. We use /users for demo.
-        const res = await api.get('/users');
+        const res = await api.get('/api/users/admin/list');
         setUsers(res.data);
       } catch (err) {
-        console.error("Admin fetch error", err);
+        setError(err?.response?.data?.detail || 'Failed to load admin data');
       } finally {
         setLoading(false);
       }
@@ -30,13 +30,19 @@ export default function AdminPanel() {
         <p>System-wide administration and management</p>
       </div>
 
+      {error && (
+        <div className="card animate-in animate-in-2" style={{ color: 'var(--color-error)', marginBottom: 'var(--space-xl)' }}>
+          {error}
+        </div>
+      )}
+
       <div className="grid-3" style={{ marginBottom: 'var(--space-xl)' }}>
         <div className="card animate-in animate-in-2">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
             <Users color="var(--color-info)" />
             <h3 style={{ margin: 0 }}>Total Users</h3>
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800 }}>{users.length || 0}</div>
+          <div style={{ fontSize: 32, fontWeight: 800 }}>{users.length}</div>
         </div>
       </div>
 
@@ -56,9 +62,9 @@ export default function AdminPanel() {
             {users.length === 0 ? (
               <tr><td colSpan="5">No users found.</td></tr>
             ) : users.map(u => (
-              <tr key={u.id}>
-                <td style={{ fontFamily: 'monospace' }}>{u.id}</td>
-                <td>{u.name || (u.first_name + ' ' + u.last_name)}</td>
+              <tr key={u.user_id}>
+                <td style={{ fontFamily: 'monospace' }}>{u.user_id}</td>
+                <td>{u.name}</td>
                 <td>{u.email}</td>
                 <td>
                   <span className={`badge ${u.role === 'admin' ? 'badge-primary' : u.role === 'instructor' ? 'badge-warning' : 'badge-gray'}`}>

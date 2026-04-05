@@ -46,6 +46,9 @@ class Token(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
 class TokenData(BaseModel):
     user_id: str
     email: str
@@ -255,12 +258,18 @@ class EnrollmentDataPoint(BaseModel):
     month: str
     students: int
 
+class CompetencyAverage(BaseModel):
+    id: str
+    name: str
+    mastery: float
+
 class AnalyticsResponse(BaseModel):
     total_students: int
     average_progress: float
     at_risk_count: int
     weekly_progress: List[ProgressDataPoint]
     enrollment_trend: List[EnrollmentDataPoint]
+    competency_averages: List[CompetencyAverage] = []
 
 # ============ Notification Models ============
 

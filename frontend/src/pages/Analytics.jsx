@@ -5,23 +5,6 @@ import {
 } from 'recharts';
 import { analyticsAPI } from '../services/api';
 
-const COURSE_ENROLLMENT_DATA = [
-  { month: 'Jan', students: 120 }, { month: 'Feb', students: 150 },
-  { month: 'Mar', students: 280 }, { month: 'Apr', students: 310 }
-];
-
-const WEEKLY_PROGRESS = [
-  { week: 'W1', quizScore: 78, progress: 10 }, { week: 'W2', quizScore: 82, progress: 25 },
-  { week: 'W3', quizScore: 76, progress: 40 }, { week: 'W4', quizScore: 85, progress: 60 }
-];
-
-const COMPETENCIES = [
-  { id: 'c1', name: 'Variables & Types', mastery: 85 },
-  { id: 'c2', name: 'Control Flow', mastery: 72 },
-  { id: 'c3', name: 'Functions', mastery: 64 },
-  { id: 'c5', name: 'Data Structures', mastery: 45 },
-];
-
 const COLORS = ['#10B981','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#06B6D4'];
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -44,16 +27,40 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const pieData = [
-  { name: 'Completed', value: 52 },
-  { name: 'In Progress', value: 30 },
-  { name: 'Not Started', value: 18 },
-];
-
 export default function Analytics() {
-  const topCompetencies = [...COMPETENCIES]
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    analyticsAPI.getOverview()
+      .then(data => setOverview(data))
+      .catch(err => setError(err?.response?.data?.detail || 'Failed to load analytics'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="page-content"><p>Loading analytics…</p></div>;
+  if (error) return <div className="page-content"><p style={{ color: 'var(--color-error)' }}>{error}</p></div>;
+
+  const enrollmentData = (overview?.enrollment_trend || []).map(d => ({
+    month: d.month, students: d.students,
+  }));
+
+  const weeklyData = (overview?.weekly_progress || []).map(d => ({
+    week: d.week, quizScore: d.quiz_score, progress: d.progress,
+  }));
+
+  const topCompetencies = [...(overview?.competency_averages || [])]
     .sort((a, b) => b.mastery - a.mastery)
     .slice(0, 8);
+
+  // Derive completion distribution from average progress
+  const avgProgress = overview?.average_progress ?? 0;
+  const pieData = [
+    { name: 'Completed',    value: Math.round(avgProgress >= 90 ? 100 : avgProgress * 0.5) },
+    { name: 'In Progress',  value: Math.round(avgProgress < 90 && avgProgress > 0 ? 100 - avgProgress : 0) },
+    { name: 'Not Started',  value: Math.max(0, 100 - Math.round(avgProgress >= 90 ? 100 : avgProgress * 0.5) - Math.round(avgProgress < 90 && avgProgress > 0 ? 100 - avgProgress : 0)) },
+  ].filter(d => d.value > 0);
 
   return (
     <div className="page-content">
@@ -66,10 +73,9 @@ export default function Analytics() {
         <div className="card animate-in animate-in-2">
           <div className="card-header">
             <h3 className="card-title">Enrollment Growth</h3>
-            <span className="badge badge-success">+18% MoM</span>
           </div>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={COURSE_ENROLLMENT_DATA}>
+            <BarChart data={enrollmentData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
               <XAxis dataKey="month" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -116,10 +122,10 @@ export default function Analytics() {
           <span className="badge badge-info">Class Average</span>
         </div>
         <ResponsiveContainer width="100%" height={240}>
-          <LineChart data={WEEKLY_PROGRESS}>
+          <LineChart data={weeklyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
             <XAxis dataKey="week" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis domain={[50, 100]} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+            <YAxis domain={[0, 100]} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
             <Tooltip content={<CustomTooltip />} />
             <Line
               type="monotone" dataKey="quizScore" stroke="var(--color-primary)"
@@ -138,38 +144,42 @@ export default function Analytics() {
       <div className="card animate-in animate-in-5">
         <div className="card-header" style={{ marginBottom: 'var(--space-lg)' }}>
           <h3 className="card-title">Competency Mastery Levels</h3>
-          <span className="badge badge-gray">Top 8 skills</span>
+          <span className="badge badge-gray">Class average – top 8</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {topCompetencies.map(c => (
-            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-              <span style={{ fontSize: 13, color: 'var(--color-text)', minWidth: 180 }}>{c.name}</span>
-              <div className="progress-track" style={{ flex: 1 }}>
-                <div
-                  className="progress-fill"
-                  style={{
-                    width: `${c.mastery}%`,
-                    background: c.mastery >= 75
-                      ? 'linear-gradient(90deg, var(--color-primary), #34d399)'
-                      : c.mastery >= 40
-                        ? 'linear-gradient(90deg, var(--color-accent), #fcd34d)'
-                        : 'linear-gradient(90deg, var(--color-error), #f87171)',
-                  }}
-                />
+        {topCompetencies.length === 0 ? (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No competency data available yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {topCompetencies.map(c => (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <span style={{ fontSize: 13, color: 'var(--color-text)', minWidth: 180 }}>{c.name}</span>
+                <div className="progress-track" style={{ flex: 1 }}>
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${c.mastery}%`,
+                      background: c.mastery >= 75
+                        ? 'linear-gradient(90deg, var(--color-primary), #34d399)'
+                        : c.mastery >= 40
+                          ? 'linear-gradient(90deg, var(--color-accent), #fcd34d)'
+                          : 'linear-gradient(90deg, var(--color-error), #f87171)',
+                    }}
+                  />
+                </div>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: c.mastery >= 75 ? 'var(--color-primary)' : c.mastery >= 40 ? 'var(--color-accent)' : 'var(--color-error)',
+                  minWidth: 40,
+                  textAlign: 'right',
+                }}>
+                  {c.mastery}%
+                </span>
               </div>
-              <span style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 12,
-                fontWeight: 600,
-                color: c.mastery >= 75 ? 'var(--color-primary)' : c.mastery >= 40 ? 'var(--color-accent)' : 'var(--color-error)',
-                minWidth: 40,
-                textAlign: 'right',
-              }}>
-                {c.mastery}%
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

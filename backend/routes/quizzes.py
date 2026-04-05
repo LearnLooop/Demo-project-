@@ -1,4 +1,5 @@
 import uuid
+import json
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
@@ -28,7 +29,7 @@ async def create_quiz(quiz_data: QuizCreate, current_user = Depends(get_current_
             id=str(uuid.uuid4()),
             quiz_id=new_quiz.id,
             text=q_data.text,
-            options=str(q_data.options),
+            options=json.dumps(q_data.options),
             correct_index=q_data.correct_index,
             explanation=q_data.explanation
         ))
@@ -50,7 +51,7 @@ async def get_available_quiz(current_user = Depends(get_current_user), db: Async
         "title": quiz.title,
         "time_limit": quiz.time_limit,
         "pass_threshold": quiz.pass_threshold,
-        "questions": [{"id": q.id, "text": q.text, "options": eval(q.options)} for q in quiz.questions]
+        "questions": [{"id": q.id, "text": q.text, "options": json.loads(q.options)} for q in quiz.questions]
     }
 
 @router.get("/{quiz_id}")
@@ -68,7 +69,7 @@ async def get_quiz(quiz_id: str, current_user = Depends(get_current_user), db: A
         "title": quiz.title,
         "time_limit": quiz.time_limit,
         "pass_threshold": quiz.pass_threshold,
-        "questions": [{"id": q.id, "text": q.text, "options": eval(q.options)} for q in quiz.questions]
+        "questions": [{"id": q.id, "text": q.text, "options": json.loads(q.options)} for q in quiz.questions]
     }
 
 @router.post("/submit", status_code=status.HTTP_201_CREATED)
