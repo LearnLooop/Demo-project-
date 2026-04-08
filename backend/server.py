@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import logging
 
 # Import routers
-from routes import auth, users, courses, quizzes, competencies, recommendations, students, analytics, notifications, search, units, chapters
+from routes import auth, users, courses, quizzes, competencies, recommendations, students, analytics, notifications, search, units, chapters, chat, messages
 from utils.auth import verify_token, get_current_user
 from database import init_db, close_db
 
@@ -42,7 +42,7 @@ app = FastAPI(
 )
 
 # CORS Configuration
-origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173")
 
 if origins_str == "*":
     # Allow all origins
@@ -77,6 +77,7 @@ async def health_check():
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(messages.router, prefix="/api/messages", tags=["messages"])
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 app.include_router(units.router, prefix="/api/units", tags=["Units"])
 app.include_router(chapters.router, prefix="/api/chapters", tags=["Chapters"])
@@ -87,6 +88,7 @@ app.include_router(students.router, prefix="/api/students", tags=["Students"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(search.router, prefix="/api/search", tags=["Search"])
+app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 
 if __name__ == "__main__":
     import uvicorn

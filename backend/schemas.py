@@ -90,6 +90,7 @@ class CompetencyUpdate(BaseModel):
 class ChapterCreate(BaseModel):
     title: str
     type: ChapterType
+    video_url: Optional[str] = None
     duration: Optional[str] = None
     content: Optional[str] = None
     unit_id: str
@@ -97,6 +98,7 @@ class ChapterCreate(BaseModel):
 class ChapterUpdate(BaseModel):
     title: Optional[str] = None
     type: Optional[ChapterType] = None
+    video_url: Optional[str] = None
     duration: Optional[str] = None
     content: Optional[str] = None
 
@@ -106,10 +108,12 @@ class Chapter(BaseModel):
     unit_id: str
     title: str
     type: ChapterType
+    video_url: Optional[str] = None
     duration: Optional[str] = None
     content: Optional[str] = None
     order_index: int
     quiz_id: Optional[str] = None
+    completed: Optional[bool] = False
 
 # ============ Unit Models ============
 
@@ -140,6 +144,10 @@ class CourseCreate(BaseModel):
     adaptive_enabled: bool = True
     auto_remediation: bool = True
     grade_gate: bool = False
+    materials_link: Optional[str] = None
+    google_classroom_link: Optional[str] = None
+    google_meet_link: Optional[str] = None
+    chaptersData: Optional[List[Dict[str, Any]]] = None
 
 class CourseUpdate(BaseModel):
     title: Optional[str] = None
@@ -151,6 +159,10 @@ class CourseUpdate(BaseModel):
     auto_remediation: Optional[bool] = None
     grade_gate: Optional[bool] = None
     published: Optional[bool] = None
+    materials_link: Optional[str] = None
+    google_classroom_link: Optional[str] = None
+    google_meet_link: Optional[str] = None
+    chaptersData: Optional[List[Dict[str, Any]]] = None
 
 class Course(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -168,6 +180,15 @@ class Course(BaseModel):
     adaptive_enabled: bool = True
     auto_remediation: bool = True
     grade_gate: bool = False
+    materials_link: Optional[str] = None
+    google_classroom_link: Optional[str] = None
+    google_meet_link: Optional[str] = None
+    progress: Optional[float] = None
+    is_enrolled: bool = False
+    average_rating: Optional[float] = None
+    rating_count: int = 0
+    enrollment_count: int = 0
+    user_rating: Optional[int] = None  # current user's rating if any
     units: List[Unit] = []
 
 class Enrollment(BaseModel):

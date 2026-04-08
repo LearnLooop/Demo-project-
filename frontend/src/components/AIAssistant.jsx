@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Sparkles, Loader, Terminal } from 'lucide-react';
 import useStore from '../store/useStore';
+import { chatAPI } from '../services/api';
 
 export default function AIAssistant() {
   const { user } = useStore();
@@ -34,27 +35,27 @@ export default function AIAssistant() {
     setInput('');
     setIsTyping(true);
 
-    // Mock AI response logic with contextual delays
-    setTimeout(() => {
-      let aiContent = "I'm deeply integrated with the Adaptive Engine. Keep practicing on the Competency Map to strengthen your skills!";
-      const lowerAuth = userMessage.content.toLowerCase();
-
-      if (lowerAuth.includes('quiz')) {
-        aiContent = "You can take practice quizzes from your 'My Courses' tab! They automatically adjust your Competency nodes upon completion through our adaptive mastery gating.";
-      } else if (lowerAuth.includes('course')) {
-        aiContent = "Our courses are highly dynamic! Try looking at the Recommendation Engine; it scans your poorest competencies and links you directly to the chapters you need most.";
-      } else if (lowerAuth.includes('explain')) {
-        aiContent = "I'd love to break that down. Essentially, adaptive learning relies on Continuous Bayesian Knowledge Tracing. The more you interact, the tighter the engine models your true capability state!";
-      }
-
+    try {
+      const response = await chatAPI.askAssistant([...messages, userMessage]);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: aiContent
+        content: response.content
       }]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "I apologize, my engine seems to be disconnected. Is the Gemini API Key set?"
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500 + Math.random() * 1000); // 1.5 - 2.5s simulated typing
+    }
   };
+  
+  const isInstructor = user?.role === 'instructor';
+  const positionStyles = { bottom: 40, right: 40 };
 
   return (
     <>
@@ -67,8 +68,7 @@ export default function AIAssistant() {
         onClick={() => setIsOpen(true)}
         style={{
           position: 'fixed',
-          bottom: 'var(--space-xl)',
-          right: 'var(--space-xl)',
+          ...positionStyles,
           width: 60,
           height: 60,
           borderRadius: '50%',
@@ -96,8 +96,7 @@ export default function AIAssistant() {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             style={{
               position: 'fixed',
-              bottom: 'var(--space-xl)',
-              right: 'var(--space-xl)',
+              ...positionStyles,
               width: 380,
               height: 580,
               maxWidth: 'calc(100vw - 32px)',
@@ -133,10 +132,10 @@ export default function AIAssistant() {
                   <Terminal size={18} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: 16, margin: 0, color: 'var(--color-text)' }}>Weaver AI</h3>
+                  <h3 style={{ fontSize: 16, margin: 0, color: 'var(--color-text)' }}>{isInstructor ? "Instructor AI" : "Weaver AI"}</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--color-primary)', fontWeight: 600 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-success)', display: 'inline-block' }} />
-                    Adaptive Tutor Online
+                    {isInstructor ? "Management Assistant" : "Adaptive Tutor Online"}
                   </div>
                 </div>
               </div>

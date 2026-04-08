@@ -72,6 +72,28 @@ export default function InstructorDashboard() {
     fetchData();
   }, []);
 
+  const handleTogglePublish = async (courseId, currentStatus) => {
+    try {
+      await coursesAPI.update(courseId, { published: !currentStatus });
+      setCourses(courses.map(c => c.id === courseId ? { ...c, published: !currentStatus } : c));
+    } catch (e) {
+      console.error("Failed to toggle publish", e);
+      alert("Failed to update course status.");
+    }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    if (window.confirm("⚠️ Are you sure you want to permanently delete this course? This action cannot be undone.")) {
+      try {
+        await coursesAPI.delete(courseId);
+        setCourses(courses.filter(c => c.id !== courseId));
+      } catch (e) {
+        console.error("Failed to delete course", e);
+        alert("Failed to delete the course. Make sure it isn't linked to locked resources.");
+      }
+    }
+  };
+
   const atRiskCount = students.filter(s => s.riskLevel === 'high').length;
   const moderateCount = students.filter(s => s.riskLevel === 'moderate').length;
 
@@ -88,7 +110,7 @@ export default function InstructorDashboard() {
         <MetricCard icon={<Users />} color="var(--color-info)" value={students.length} label="Total Students" change="API Connected" delay={2} />
         <MetricCard icon={<BookOpen />} color="var(--color-primary)" value={courses.length} label="Active Courses" change="" delay={3} />
         <MetricCard icon={<TrendingUp />} color="var(--color-accent)" value="74%" label="Avg. Completion" change="" delay={4} />
-        <MetricCard icon={<Award />} color="#8B5CF6" value="4.8★" label="Avg. Course Rating" change="" delay={5} />
+        <MetricCard icon={<Award />} color="#8B5CF6" value={(() => { const rated = courses.filter(c => c.average_rating); if (!rated.length) return 'N/A'; const avg = rated.reduce((s, c) => s + c.average_rating, 0) / rated.length; return `${avg.toFixed(1)}★`; })()} label="Avg. Course Rating" change="" delay={5} />
       </div>
 
       {atRiskCount > 0 && (
@@ -158,7 +180,7 @@ export default function InstructorDashboard() {
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <span className="badge badge-gray">{course.level || 'Beginner'}</span>
                   <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                    {course.enrolled || 0} students
+                    {course.enrollment_count || 0} students
                   </span>
                 </div>
               </div>
@@ -167,7 +189,22 @@ export default function InstructorDashboard() {
                   <div className="progress-fill" style={{ width: `0%` }} />
                 </div>
               </div>
-              <Link to="/course-builder" className="btn btn-secondary btn-sm">Edit Course</Link>
+              <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+                <button 
+                  className={`btn btn-sm ${course.published ? 'btn-secondary' : 'btn-primary'}`}
+                  onClick={() => handleTogglePublish(course.id, course.published)}
+                >
+                  {course.published ? 'Unpublish' : 'Publish'}
+                </button>
+                <Link to={`/students?courseId=${course.id}`} className="btn btn-secondary btn-sm">Students</Link>
+                <Link to={`/course-builder/${course.id}`} className="btn btn-secondary btn-sm">Edit</Link>
+                <button 
+                  className="btn btn-danger btn-sm"
+                  onClick={() => handleDeleteCourse(course.id)}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>

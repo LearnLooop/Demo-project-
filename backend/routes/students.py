@@ -6,7 +6,7 @@ from datetime import datetime
 
 from database import get_db
 from db.models import User, Enrollment, Course, UserCompetencyProgress, Competency
-from schemas import StudentInfo, RiskLevel
+from schemas import StudentInfo, RiskLevel, MessageCreate
 from utils.auth import get_current_instructor
 
 router = APIRouter()
@@ -14,6 +14,7 @@ router = APIRouter()
 @router.get("/", response_model=List[StudentInfo])
 async def get_all_students(
     risk_filter: Optional[str] = None,
+    course_id: Optional[str] = None,
     current_instructor = Depends(get_current_instructor),
     db: AsyncSession = Depends(get_db)
 ):
@@ -22,9 +23,17 @@ async def get_all_students(
     Constructs the StudentInfo footprint including weakened competencies and RiskLevel.
     """
     # 1. Get instructor's course IDs
-    stmt_courses = select(Course.id).where(Course.instructor_id == current_instructor.user_id)
-    courses_res = await db.execute(stmt_courses)
-    course_ids = [c[0] for c in courses_res.all()]
+    if course_id:
+        # Check if instructor owns it (for security)
+        stmt_check = select(Course).where(and_(Course.id == course_id, Course.instructor_id == current_instructor.user_id))
+        check_res = await db.execute(stmt_check)
+        if not check_res.scalar_one_or_none():
+            return []
+        course_ids = [course_id]
+    else:
+        stmt_courses = select(Course.id).where(Course.instructor_id == current_instructor.user_id)
+        courses_res = await db.execute(stmt_courses)
+        course_ids = [c[0] for c in courses_res.all()]
     
     if not course_ids:
         return []
@@ -110,3 +119,33 @@ async def get_at_risk_students(
 ):
     """Convenience endpoint calling the same logic but forcing HIGH risk"""
     return await get_all_students(risk_filter=RiskLevel.HIGH.value, current_instructor=current_instructor, db=db)
+
+@router.post("/message")
+async def send_message(
+    msg: MessageCreate,
+    current_instructor = Depends(get_current_instructor),
+    db: AsyncSession = Depends(get_db)
+):
+    from db.models import Message as DBMessage
+    from routes.messages import manager
+    
+    new_msg = DBMessage(
+        sender_id=current_instructor.user_id,
+        recipient_id=msg.recipient_id,
+        subject=msg.subject,
+        message=msg.message
+    )
+    db.add(new_msg)
+    await db.commit()
+    await db.refresh(new_msg)
+    
+    msg_dict = {
+        "id": new_msg.id,
+        "sender_id": new_msg.sender_id,
+        "recipient_id": new_msg.recipient_id,
+        "message": new_msg.message,
+        "created_at": new_msg.created_at.isoformat()
+    }
+    
+    await manager.send_personal_message(msg_dict, msg.recipient_id)
+    return {"status": "success", "message": "Message sent successfully"}

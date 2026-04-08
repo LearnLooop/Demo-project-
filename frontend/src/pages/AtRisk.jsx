@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, BookOpen, AlertTriangle, Clock, TrendingDown, Mail } from 'lucide-react';
-import { studentsAPI } from '../services/api';
+import { studentsAPI, messagesAPI } from '../services/api';
+import useStore from '../store/useStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useForm } from 'react-hook-form';
 
@@ -30,13 +31,24 @@ function RiskBadge({ level }) {
 
 function StudentDrawer({ student, onClose }) {
   const { register, handleSubmit, reset } = useForm();
+  const { openChatWith } = useStore();
   const [sent, setSent] = useState(false);
   if (!student) return null;
 
   const onSendNudge = async (data) => {
-    await new Promise(r => setTimeout(r, 500));
-    setSent(true);
-    setTimeout(() => { setSent(false); reset(); }, 2000);
+    try {
+      await messagesAPI.sendMessage(student.id, data.message);
+      setSent(true);
+      setTimeout(() => { 
+        setSent(false); 
+        reset(); 
+        onClose();
+        openChatWith({ id: student.id, name: student.name, role: 'student', avatar: student.avatar, lastActive: student.lastActive, progress: student.progress });
+      }, 800);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to send message');
+    }
   };
 
   const weeklyData = WEEKLY_PROGRESS.map((w, i) => ({

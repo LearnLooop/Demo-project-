@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Clock, CheckCircle, XCircle, Trophy, RotateCcw, Loader } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, CheckCircle, XCircle, Trophy, RotateCcw, Loader, Sparkles } from 'lucide-react';
 import useStore from '../store/useStore';
-import { quizzesAPI } from '../services/api';
+import { quizzesAPI, coursesAPI } from '../services/api';
 
 const TOTAL_TIME = 90; // seconds per quiz set
 
@@ -142,23 +142,37 @@ export default function Quiz() {
   const [questions, setQuestions] = useState([]);
   const timerRef = useRef(null);
 
+  const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState("");
+
   useEffect(() => {
-    fetchQuiz();
+    async function init() {
+      try {
+        const c = await coursesAPI.getAll();
+        setCourses(c.filter(course => course.progress !== undefined)); 
+      } catch (e) {
+        console.error(e);
+      }
+      setLoading(false);
+    }
+    init();
     return () => clearInterval(timerRef.current);
   }, []);
 
-  const fetchQuiz = async () => {
+  const generateQuiz = async () => {
+    if (!selectedCourse) return;
     try {
       setLoading(true);
-      const data = await quizzesAPI.getAvailable();
+      const data = await quizzesAPI.generate(selectedCourse);
       setQuizData(data);
       setQuestions(data.questions || []);
       setTimeLeft(data.time_limit || TOTAL_TIME);
       if (!quizState.active) startQuiz(data.id);
       setLoading(false);
     } catch (error) {
-      console.error('Failed to fetch quiz:', error);
+      console.error('Failed to generate quiz:', error);
       setLoading(false);
+      alert('Failed to generate AI quiz. Please ensure the backend has the Gemini API Key initialized.');
     }
   };
 
@@ -201,8 +215,9 @@ export default function Quiz() {
 
   const handleReset = () => {
     resetQuiz();
-    setTimeLeft(quizData?.time_limit || TOTAL_TIME);
-    fetchQuiz();
+    setTimeLeft(TOTAL_TIME);
+    setQuestions([]);
+    setQuizData(null);
   };
 
   if (loading) {
@@ -217,7 +232,24 @@ export default function Quiz() {
     return (
       <div className="page-content" style={{ maxWidth: 640, margin: '0 auto' }}>
         <div className="card" style={{ padding: 'var(--sp-8)', textAlign: 'center' }}>
-          <p style={{ color: 'var(--color-text-muted)' }}>No quiz questions available.</p>
+          <h2 style={{ marginBottom: 12 }}>AI Practice Quiz Generator</h2>
+          <p style={{ color: 'var(--color-text-muted)', marginBottom: 24 }}>Select a course to dynamically generate a targeted practice quiz using the adaptive engine.</p>
+          <select 
+            className="form-select" 
+            value={selectedCourse} 
+            onChange={e => setSelectedCourse(e.target.value)}
+            style={{ marginBottom: 16 }}
+          >
+            <option value="">-- Select Enrolled Course --</option>
+            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+          <button 
+            className="btn btn-primary pulse-glow" 
+            onClick={generateQuiz} 
+            disabled={!selectedCourse || loading}
+          >
+            <Sparkles size={16} /> Generate Quiz
+          </button>
         </div>
       </div>
     );

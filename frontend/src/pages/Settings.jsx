@@ -1,37 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Bell, Lock, Palette, User, Save, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useStore from '../store/useStore';
 import { usersAPI } from '../services/api';
 
 export default function Settings() {
-  const { user, setUser } = useStore();
+  const { user, setUser, theme, setTheme } = useStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Local state for the profile form
+  // Local state for the forms
   const [profileForm, setProfileForm] = useState({
     firstName: user?.name?.split(' ')[0] || '',
     lastName: user?.name?.split(' ')[1] || '',
     email: user?.email || '',
     bio: user?.bio || ''
   });
+  const [pendingAvatar, setPendingAvatar] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({ current: '', newPassword: '', confirm: '' });
+  const [passwordError, setPasswordError] = useState('');
+  
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      setPendingAvatar(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCancel = () => {
+    setProfileForm({
+      firstName: user?.name?.split(' ')[0] || '',
+      lastName: user?.name?.split(' ')[1] || '',
+      email: user?.email || '',
+      bio: user?.bio || ''
+    });
+    setPendingAvatar(null);
+    setPasswordForm({ current: '', newPassword: '', confirm: '' });
+    setPasswordError('');
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
+    setPasswordError('');
     try {
       if (activeTab === 'profile') {
         const payload = {
           name: `${profileForm.firstName} ${profileForm.lastName}`.trim(),
           bio: profileForm.bio || null
         };
+        if (pendingAvatar) {
+            payload.avatar = pendingAvatar;
+        }
         const updatedUser = await usersAPI.updateProfile(payload);
         setUser(updatedUser);
+        setPendingAvatar(null);
+      } else if (activeTab === 'security') {
+        if (!passwordForm.current || !passwordForm.newPassword || !passwordForm.confirm) {
+            setPasswordError('All password fields are required');
+            setIsSaving(false);
+            return;
+        }
+        if (passwordForm.newPassword !== passwordForm.confirm) {
+            setPasswordError('New passwords do not match');
+            setIsSaving(false);
+            return;
+        }
+        if (passwordForm.newPassword.length < 4) {
+           setPasswordError('Password must be at least 4 characters');
+           setIsSaving(false);
+           return;
+        }
+        await usersAPI.changePassword(passwordForm.current, passwordForm.newPassword);
+        setPasswordForm({ current: '', newPassword: '', confirm: '' });
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {
+      if (activeTab === 'security') {
+          setPasswordError(e.response?.data?.detail || 'Failed to update password');
+      }
       console.error(e);
     } finally {
       setIsSaving(false);
@@ -93,17 +147,38 @@ export default function Settings() {
                   color: '#fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   borderRadius: '50%',
-                  boxShadow: 'var(--shadow-md)'
+                  boxShadow: 'var(--shadow-md)',
+                  overflow: 'hidden'
               }}>
-                {user?.name?.charAt(0) || 'U'}
+                {pendingAvatar ? (
+                  <img src={pendingAvatar} alt="Pending Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : user?.avatar ? (
+                  <img src={user.avatar} alt={user?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  user?.name?.charAt(0) || 'U'
+                )}
               </div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: 24, margin: '0 0 4px', letterSpacing: '-0.02em' }}>{user?.name}</h3>
                 <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)', fontWeight: 500 }}>{user?.email}</p>
               </div>
-              <button className="btn btn-secondary" style={{ padding: '10px 20px', fontSize: 13 }}>
-                <Upload size={16} /> Change Avatar
-              </button>
+              <input 
+                type="file" 
+                accept="image/*" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                onChange={handleFileChange} 
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary" style={{ padding: '10px 20px', fontSize: 13 }} onClick={() => fileInputRef.current?.click()}>
+                  <Upload size={16} /> Choose Image
+                </button>
+                {pendingAvatar && (
+                  <button className="btn btn-secondary" style={{ padding: '10px 20px', fontSize: 13, background: 'rgba(213,0,0,0.1)', color: 'var(--color-error)' }} onClick={() => setPendingAvatar(null)}>
+                    Discard
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ height: 1, background: 'var(--color-border-bright)' }} />
@@ -165,17 +240,22 @@ export default function Settings() {
 
         {activeTab === 'security' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
+            {passwordError && (
+               <div style={{ background: 'rgba(213,0,0,0.1)', color: 'var(--color-error)', padding: '12px', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 600 }}>
+                 {passwordError}
+               </div>
+            )}
             <div className="form-group">
               <label className="form-label">Current Password</label>
-              <input className="form-input" type="password" placeholder="••••••••" />
+              <input className="form-input" type="password" placeholder="••••••••" value={passwordForm.current} onChange={e => setPasswordForm({...passwordForm, current: e.target.value})} />
             </div>
             <div className="form-group">
               <label className="form-label">New Password</label>
-              <input className="form-input" type="password" placeholder="••••••••" />
+              <input className="form-input" type="password" placeholder="••••••••" value={passwordForm.newPassword} onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})} />
             </div>
             <div className="form-group">
               <label className="form-label">Confirm New Password</label>
-              <input className="form-input" type="password" placeholder="••••••••" />
+              <input className="form-input" type="password" placeholder="••••••••" value={passwordForm.confirm} onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})} />
             </div>
             <div style={{
               background: 'rgba(0,200,83,0.1)',
@@ -200,11 +280,11 @@ export default function Settings() {
                   { id: 'theme-minimal', label: 'Minimal Clean',  bg: '#F7F7F5', border: '#FF4B2B', text: '#0A0A0A' },
                   { id: 'theme-neo',     label: 'Neo Brutalism',  bg: '#E5FE40', border: '#0A0A0A', text: '#0A0A0A' },
                 ].map(t => {
-                  const isActive = useStore.getState().theme === t.id;
+                  const isActive = theme === t.id;
                   return (
                     <button
                       key={t.id}
-                      onClick={() => useStore.getState().setTheme(t.id)}
+                      onClick={() => setTheme(t.id)}
                       style={{
                         background: t.bg,
                         border: `2px solid ${isActive ? t.border : 'var(--color-border)'}`,
@@ -232,10 +312,10 @@ export default function Settings() {
 
         {/* Global Save Footer */}
         <div style={{ marginTop: 'var(--sp-8)', borderTop: '1px solid var(--color-border-bright)', paddingTop: 'var(--sp-6)', display: 'flex', gap: 'var(--sp-3)' }}>
-          <button className="btn btn-primary" onClick={handleSave} style={{ fontSize: 16 }}>
-            <Save size={18} /> {saved ? '✓ Saved!' : 'Save Changes'}
+          <button className="btn btn-primary" onClick={handleSave} style={{ fontSize: 16 }} disabled={isSaving}>
+            <Save size={18} /> {isSaving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Changes'}
           </button>
-          <button className="btn btn-secondary" style={{ fontSize: 16 }}>Cancel</button>
+          <button className="btn btn-secondary" onClick={handleCancel} style={{ fontSize: 16 }}>Cancel</button>
         </div>
       </motion.div>
     </div>

@@ -24,6 +24,13 @@ const useStore = create((set, get) => ({
   authLoading: false,
   authError: null,
   
+  // ---------- Chat Drawer ----------
+  isChatOpen: false,
+  activeChatContact: null,
+  toggleChat: () => set(state => ({ isChatOpen: !state.isChatOpen })),
+  closeChat: () => set({ isChatOpen: false, activeChatContact: null }),
+  openChatWith: (contact) => set({ isChatOpen: true, activeChatContact: contact }),
+  
   setUser: (user) => {
     localStorage.setItem('user', JSON.stringify(user));
     set({ user });
@@ -36,7 +43,14 @@ const useStore = create((set, get) => ({
       // Immediately log in upon successful registration
       return await get().login(email, password);
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || 'Registration failed';
+      let errorMessage = 'Registration failed';
+      if (error.response?.data?.detail) {
+        errorMessage = Array.isArray(error.response.data.detail) 
+          ? error.response.data.detail[0].msg 
+          : error.response.data.detail;
+      } else if (!error.response) {
+        errorMessage = 'Network Error. Could not connect to the backend.';
+      }
       set({ authLoading: false, authError: errorMessage });
       return { success: false, error: errorMessage };
     }
@@ -64,7 +78,14 @@ const useStore = create((set, get) => ({
       
       return { success: true, role: userInfo.role };
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || 'Invalid credentials';
+      let errorMessage = 'Invalid credentials';
+      if (error.response?.data?.detail) {
+        errorMessage = Array.isArray(error.response.data.detail) 
+          ? error.response.data.detail[0].msg 
+          : error.response.data.detail;
+      } else if (!error.response) {
+        errorMessage = 'Network Error. Could not connect to the backend.';
+      }
       set({ authLoading: false, authError: errorMessage });
       return { success: false, error: errorMessage };
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { studentsAPI } from '../services/api';
 
 const AVATAR_COLORS = [
@@ -9,11 +10,14 @@ const AVATAR_COLORS = [
 export default function Students() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const courseId = searchParams.get('courseId');
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const data = await studentsAPI.getAll();
+        const data = await studentsAPI.getAll(null, courseId);
         setStudents(data || []);
       } catch (err) {
         console.error(err);
@@ -29,8 +33,8 @@ export default function Students() {
   return (
     <div className="page-content">
       <div className="page-header animate-in animate-in-1">
-        <h1>Students</h1>
-        <p>Overview of all enrolled students across your courses</p>
+        <h1>{courseId ? 'Course Students' : 'Students'}</h1>
+        <p>{courseId ? 'Viewing students enrolled directly in this course' : 'Overview of all enrolled students across your courses'}</p>
       </div>
       <div className="card animate-in animate-in-2" style={{ padding: 0, overflow: 'hidden' }}>
         <table className="data-table">

@@ -7,12 +7,9 @@ const getBackendURL = () => {
     envURL = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_BACKEND_URL;
   }
   
-  // If we're on a preview domain, use the same domain for backend
-  if (typeof window !== 'undefined' && window.location.hostname.includes('preview.emergentcf.cloud')) {
-    return window.location.origin;
-  }
+  if (envURL) return envURL;
   
-  return envURL || 'http://localhost:8001';
+  return ''; // Use relative path to let Vite Proxy handle it
 };
 
 const API_URL = getBackendURL();
@@ -135,6 +132,10 @@ export const coursesAPI = {
     const { data } = await api.post(`/api/courses/${courseId}/chapters/${chapterId}/complete`);
     return data;
   },
+  rateCourse: async (courseId, rating, review = '') => {
+    const { data } = await api.post(`/api/courses/${courseId}/rate`, { rating, review });
+    return data;
+  },
 };
 
 // Quizzes API
@@ -157,6 +158,10 @@ export const quizzesAPI = {
   },
   getResult: async (resultId) => {
     const { data } = await api.get(`/api/quizzes/results/${resultId}`);
+    return data;
+  },
+  generate: async (courseId) => {
+    const { data } = await api.post(`/api/quizzes/generate`, { course_id: courseId });
     return data;
   },
 };
@@ -187,8 +192,10 @@ export const recommendationsAPI = {
 
 // Students API (Instructor only)
 export const studentsAPI = {
-  getAll: async (riskFilter) => {
-    const params = riskFilter ? { risk_filter: riskFilter } : {};
+  getAll: async (riskFilter, courseId) => {
+    const params = {};
+    if (riskFilter) params.risk_filter = riskFilter;
+    if (courseId) params.course_id = courseId;
     const { data } = await api.get('/api/students/', { params });
     return data;
   },
@@ -242,6 +249,30 @@ export const notificationsAPI = {
 export const searchAPI = {
   search: async (query) => {
     const { data } = await api.get('/api/search/', { params: { q: query } });
+    return data;
+  },
+};
+
+// Chat API
+export const chatAPI = {
+  askAssistant: async (messages) => {
+    const { data } = await api.post('/api/chat/assistant', { messages });
+    return data;
+  },
+};
+
+// Messages API
+export const messagesAPI = {
+  getContacts: async () => {
+    const { data } = await api.get('/api/messages/contacts');
+    return data;
+  },
+  getHistory: async (contactId) => {
+    const { data } = await api.get(`/api/messages/history/${contactId}`);
+    return data;
+  },
+  sendMessage: async (recipientId, message) => {
+    const { data } = await api.post('/api/messages/send', { recipient_id: recipientId, message });
     return data;
   },
 };

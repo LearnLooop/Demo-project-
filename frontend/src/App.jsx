@@ -5,13 +5,15 @@ import useStore from './store/useStore';
 
 import Sidebar from './components/Sidebar';
 import TopNav from './components/TopNav';
-import ThreeCanvas from './components/ThreeCanvas'; // Added this line
+import ThreeCanvas from './components/ThreeCanvas';
 import Confetti from './components/Confetti';
 import AIAssistant from './components/AIAssistant';
+import ChatDrawer from './components/ChatDrawer';
 
 import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
 import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
 import CompetencyMap from './pages/CompetencyMap';
 import Recommendations from './pages/Recommendations';
 import Quiz from './pages/Quiz';
@@ -57,6 +59,7 @@ function AppLayout({ children }) {
           </motion.div>
         </AnimatePresence>
         <AIAssistant />
+        <ChatDrawer />
       </div>
     </div>
   );
@@ -98,6 +101,11 @@ function RoutesWithTransitions() {
             <AppLayout><Courses /></AppLayout>
           </PrivateRoute>
         } />
+        <Route path="/courses/:courseId" element={
+          <PrivateRoute requiredRole="student">
+            <AppLayout><CourseDetail /></AppLayout>
+          </PrivateRoute>
+        } />
         <Route path="/competency-map" element={
           <PrivateRoute requiredRole="student">
             <AppLayout><CompetencyMap /></AppLayout>
@@ -121,6 +129,11 @@ function RoutesWithTransitions() {
           </PrivateRoute>
         } />
         <Route path="/course-builder" element={
+          <PrivateRoute requiredRole="instructor">
+            <AppLayout><CourseBuilder /></AppLayout>
+          </PrivateRoute>
+        } />
+        <Route path="/course-builder/:courseId" element={
           <PrivateRoute requiredRole="instructor">
             <AppLayout><CourseBuilder /></AppLayout>
           </PrivateRoute>

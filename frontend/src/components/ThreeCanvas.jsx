@@ -42,21 +42,20 @@ function RandomFloatingShape({ shapeType, color, index, total }) {
   return (
     <Float speed={speed * 1.5} rotationIntensity={1.5} floatIntensity={4}>
       <mesh ref={meshRef} position={randomPosition} rotation={randomRotation} scale={scaleMultiplier}>
-        {shapeType === 'cylinder'    && <cylinderGeometry args={[0.8, 0.8, 2, 32]} />} {/* Database / Server */}
+        {shapeType === 'cylinder'    && <cylinderGeometry args={[0.8, 0.8, 2, 16]} />} {/* Database / Server */}
         {shapeType === 'octahedron'  && <octahedronGeometry args={[1.2, 0]} />}       {/* Network Node */}
         {shapeType === 'dodecahedron'&& <dodecahedronGeometry args={[1.1, 0]} />}     {/* Graph Concept */}
-        {shapeType === 'torus'       && <torusKnotGeometry args={[0.9, 0.25, 128, 32]} />} {/* Looped Network */}
+        {shapeType === 'torus'       && <torusKnotGeometry args={[0.9, 0.25, 64, 16]} />} {/* Looped Network */}
         {shapeType === 'box'         && <boxGeometry args={[1.5, 1.5, 1.5]} />}       {/* Logic Block */}
-        {shapeType === 'sphere'      && <sphereGeometry args={[1.1, 64, 64]} />}      {/* Data Packet */}
+        {shapeType === 'sphere'      && <sphereGeometry args={[1.1, 32, 32]} />}      {/* Data Packet */}
         
         {(shapeType === 'sphere' || shapeType === 'cylinder') ? (
           <MeshDistortMaterial 
-            distort={0.4} 
-            speed={speed * 2} 
+            distort={0.3} 
+            speed={speed * 1.5} 
             color={color} 
-            roughness={0.1}
+            roughness={0.2}
             metalness={0.5}
-            clearcoat={1}
           />
         ) : shapeType === 'torus' ? (
           <MeshWobbleMaterial 
@@ -67,12 +66,10 @@ function RandomFloatingShape({ shapeType, color, index, total }) {
             metalness={0.8}
           />
         ) : (
-          <meshPhysicalMaterial 
+          <meshStandardMaterial 
             color={color} 
-            roughness={0.1} 
-            metalness={0.8}
-            clearcoat={1}
-            clearcoatRoughness={0.1}
+            roughness={0.2} 
+            metalness={0.6}
           />
         )}
       </mesh>
@@ -90,8 +87,8 @@ function BackgroundElements() {
     // Vibrant editorial palette
     const colors = ['#FF4B2B', '#1E90FF', '#E5FE40', '#8B5CF6', '#F59E0B', '#10B981', '#ffffff', '#1C1917'];
     
-    // Spawn fewer shapes globally so it isn't overwhelming (between 5 and 8 shapes)
-    const amount = Math.floor(Math.random() * 4) + 5; 
+    // Spawn highly optimized amount to prevent GPU overload (3 to 5 shapes)
+    const amount = Math.floor(Math.random() * 3) + 3; 
     
     return Array.from({ length: amount }).map((_, i) => ({
       id: `${location.pathname}-${i}`,
@@ -117,7 +114,7 @@ function BackgroundElements() {
         />
       ))}
 
-      <ContactShadows position={[0, -6, 0]} opacity={0.6} scale={60} blur={3} far={12} />
+      <ContactShadows resolution={512} position={[0, -6, 0]} opacity={0.4} scale={60} blur={1} far={12} />
     </>
   );
 }

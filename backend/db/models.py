@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, DateTime, Text, Table, Enum
+from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, DateTime, Text, Table, Enum, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from uuid import uuid4
@@ -71,6 +71,10 @@ class Course(Base):
     auto_remediation = Column(Boolean, default=True)
     grade_gate = Column(Boolean, default=False)
     
+    materials_link = Column(String, nullable=True)
+    google_classroom_link = Column(String, nullable=True)
+    google_meet_link = Column(String, nullable=True)
+    
     instructor = relationship("User", back_populates="courses_taught")
     units = relationship("Unit", back_populates="course", cascade="all, delete-orphan", order_by="Unit.order_index")
     enrollments = relationship("Enrollment", back_populates="course", cascade="all, delete-orphan")
@@ -92,6 +96,7 @@ class Chapter(Base):
     unit_id = Column(String, ForeignKey("units.id"), nullable=False)
     title = Column(String, nullable=False)
     type = Column(Enum(ChapterType), nullable=False)
+    video_url = Column(String, nullable=True)
     duration = Column(String, nullable=True)
     content = Column(Text, nullable=True)
     order_index = Column(Integer, default=0)
@@ -128,6 +133,7 @@ class Enrollment(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     course_id = Column(String, ForeignKey("courses.id"), nullable=False)
     progress = Column(Float, default=0.0)
+    completed_chapters = Column(JSON, default=list)
     enrolled_at = Column(DateTime, default=datetime.utcnow)
     last_accessed = Column(DateTime, nullable=True)
 
@@ -148,3 +154,28 @@ class QuizResult(Base):
     quiz_id = Column(String, ForeignKey("quizzes.id"), nullable=False)
     score = Column(Float, nullable=False)
     completed_at = Column(DateTime, default=datetime.utcnow)
+
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    sender_id = Column(String, ForeignKey("users.id"), nullable=False)
+    recipient_id = Column(String, ForeignKey("users.id"), nullable=False)
+    subject = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    sender = relationship("User", foreign_keys=[sender_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])
+
+class CourseRating(Base):
+    __tablename__ = "course_ratings"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    course_id = Column(String, ForeignKey("courses.id"), nullable=False)
+    rating = Column(Integer, nullable=False)  # 1-5 stars
+    review = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    course = relationship("Course")

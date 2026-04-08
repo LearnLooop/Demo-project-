@@ -157,7 +157,7 @@ function CourseProgressRow({ course, index }) {
         <AnimatedProgressBar value={progress} delay={index * 150} />
       </div>
 
-      <Link to="/courses">
+      <Link to={`/courses/${course.id}`}>
         <motion.span whileHover={{ x: 4 }} style={{ fontSize: 14, color: 'var(--color-primary)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'var(--sp-4)' }}>
           Go <ArrowRight size={16} />
         </motion.span>
@@ -212,12 +212,12 @@ export default function StudentDashboard() {
         competenciesAPI.getAll()
       ]);
 
-      setCourses(coursesData.filter(c => c.progress > 0));
+      setCourses(coursesData.filter(c => c.is_enrolled));
       setRecommendations(recsData);
       setCompetencies(compsData);
 
       // Calculate stats
-      const enrolledCourses = coursesData.filter(c => c.progress > 0);
+      const enrolledCourses = coursesData.filter(c => c.is_enrolled);
       const avgProgress = enrolledCourses.length > 0
         ? enrolledCourses.reduce((sum, c) => sum + c.progress, 0) / enrolledCourses.length
         : 0;

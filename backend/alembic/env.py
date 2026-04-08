@@ -26,10 +26,13 @@ from db.models import Base
 import db.models # ensure all models are imported
 target_metadata = Base.metadata
 
-context_config.set_main_option(
-    "sqlalchemy.url",
-    os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./courseweaver.db")
-)
+db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./courseweaver.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+context_config.set_main_option("sqlalchemy.url", db_url)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

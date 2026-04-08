@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, LayoutDashboard, BookOpen, Map,
   Lightbulb, HelpCircle, Users, AlertTriangle,
-  BarChart2, Settings, PlusSquare, LogOut, Shield
+  BarChart2, Settings, PlusSquare, LogOut, Shield, User
 } from 'lucide-react';
 import useStore from '../store/useStore';
 
@@ -143,44 +143,42 @@ export default function Sidebar() {
 
           <div className="nav-section-label">Account</div>
           <NavItem to="/settings" icon={<Settings size={17} />} label="Settings" />
+          <NavItem to="/settings" icon={<User size={17} />} label="Profile" />
+          <NavItem to="#" icon={<LogOut size={17} />} label="Logout" onClick={handleLogout} />
         </nav>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+        <div
           style={{
-            padding: 'var(--sp-4)',
+            padding: '16px',
             borderTop: '1px solid var(--color-border)',
             display: 'flex',
             alignItems: 'center',
-            gap: 'var(--sp-3)',
+            gap: '12px',
           }}
         >
-          <motion.div
-            className="avatar-placeholder avatar-placeholder-md"
-            style={{ background: avatarColor, flexShrink: 0, cursor: 'default' }}
-            whileHover={{ scale: 1.08 }}
+          <div
+            style={{ width: 36, height: 36, borderRadius: '50%', background: avatarColor, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}
           >
-            {user?.name?.charAt(0) || 'U'}
-          </motion.div>
+            {user?.avatar ? (
+              <img src={user.avatar} alt={user?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              user?.name?.charAt(0) || 'U'
+            )}
+          </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user?.name || 'User'}
             </div>
             <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'capitalize' }}>{user?.role}</div>
           </div>
-          <motion.button
+          <button
             onClick={handleLogout}
-            className="btn-icon"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
             title="Sign out"
-            whileHover={{ rotate: 10, color: 'var(--color-error)' }}
-            whileTap={{ scale: 0.9 }}
-            id="logout-btn"
           >
             <LogOut size={16} />
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       </aside>
     </>
   );

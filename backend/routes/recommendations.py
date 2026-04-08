@@ -3,7 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 from datetime import datetime
+import os
 import uuid
+import google.generativeai as genai
 
 from database import get_db
 from db.models import UserCompetencyProgress, Chapter, Competency, chapter_competency, Course
@@ -11,6 +13,11 @@ from schemas import Recommendation, Priority
 from utils.auth import get_current_user
 
 router = APIRouter()
+
+# Initialize Gemini SDK
+api_key = os.environ.get("GEMINI_API_KEY")
+if api_key and api_key != "your_api_key_here":
+    genai.configure(api_key=api_key)
 
 @router.get("/", response_model=List[Recommendation])
 async def get_recommendations(
@@ -57,6 +64,19 @@ async def get_recommendations(
             
             for chapter, course in chapters_found:
                 rec_priority = Priority.HIGH if progress.mastery_level < 40 else Priority.MEDIUM
+                reason = f"Review required to improve your mastery in {comp.name}"
+                
+                # Enhance with AI
+                if api_key and api_key != "your_api_key_here":
+                    try:
+                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        prompt = f"The student has a weak mastery level of {round(progress.mastery_level, 1)}% in the topic '{comp.name}'. They must review the chapter '{chapter.title}' from the course '{course.title}'. Write a very short, encouraging 1-2 sentence personalized reason explaining why they should study this next to improve."
+                        response = model.generate_content(prompt)
+                        if response.text:
+                            reason = response.text.replace('"', '').replace('\n', ' ').strip()
+                    except Exception as ai_e:
+                        print(f"Generative AI Refinement failed: {ai_e}")
+                        pass
                 
                 recommendations.append(Recommendation(
                     id=str(uuid.uuid4()),
@@ -65,7 +85,7 @@ async def get_recommendations(
                     chapter_title=chapter.title,
                     course_id=course.id,
                     course_title=course.title,
-                    reason=f"Review required to improve your mastery in {comp.name}",
+                    reason=reason,
                     estimated_time=int(chapter.duration.split()[0]) if chapter.duration and chapter.duration.split()[0].isdigit() else 15,
                     related_competency=comp.name,
                     current_mastery=progress.mastery_level,

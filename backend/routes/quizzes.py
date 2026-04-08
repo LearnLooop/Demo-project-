@@ -6,9 +6,16 @@ from sqlalchemy.orm import selectinload
 from typing import List
 
 from schemas import QuizCreate, QuizSubmission, QuizResult as QuizResultSchema
-from db.models import Quiz, QuizQuestion, QuizResult, UserCompetencyProgress, Enrollment, Competency
+from db.models import Quiz, QuizQuestion, QuizResult, UserCompetencyProgress, Enrollment, Competency, Course, Unit, Chapter
 from utils.auth import get_current_user, get_current_instructor
 from database import get_db
+import os
+import json
+import google.generativeai as genai
+from pydantic import BaseModel
+
+class QuizGenerateRequest(BaseModel):
+    course_id: str
 
 router = APIRouter()
 
@@ -148,3 +155,87 @@ async def get_quiz_history(current_user = Depends(get_current_user), db: AsyncSe
     stmt = select(QuizResult).where(QuizResult.user_id == current_user.id).order_by(QuizResult.completed_at.desc())
     res = await db.execute(stmt)
     return res.scalars().all()
+
+@router.post("/generate", status_code=status.HTTP_201_CREATED)
+async def generate_quiz(req: QuizGenerateRequest, current_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Dynamically generate a quiz via Gemini AI for a given course"""
+    stmt = select(Course).options(selectinload(Course.units).selectinload(Unit.chapters)).where(Course.id == req.course_id)
+    res = await db.execute(stmt)
+    course = res.scalar_one_or_none()
+    
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+        
+    context_str = f"Course: {course.title}\nDescription: {course.description}\n"
+    for unit in course.units:
+        for chapter in unit.chapters:
+            context_str += f"- {chapter.title}\n"
+            
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key or api_key == "your_api_key_here":
+        raise HTTPException(status_code=500, detail="Gemini API Key is not configured. Add it to .env.")
+        
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    
+    prompt = f"""Generate a 5-question multiple choice quiz based on this course context:
+{context_str}
+
+Return EXACTLY a JSON object with this shape, and nothing else (no markdown formatting or backticks around it):
+{{
+  "title": "Generated Quiz Title",
+  "questions": [
+    {{
+      "text": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_index": 0,
+      "explanation": "Why this is correct."
+    }}
+  ]
+}}
+"""
+    response = model.generate_content(prompt)
+    try:
+        raw_text = response.text.strip('` \n')
+        if raw_text.startswith('json'):
+            raw_text = raw_text[4:]
+        data = json.loads(raw_text)
+    except Exception as e:
+        print(response.text)
+        raise HTTPException(status_code=500, detail="Failed to parse AI response.")
+        
+    new_quiz = Quiz(
+        id=str(uuid.uuid4()),
+        title=data.get("title", f"Quiz for {course.title}"),
+        time_limit=90
+    )
+    db.add(new_quiz)
+    await db.flush()
+    
+    response_questions = []
+    
+    for idx, q_data in enumerate(data.get("questions", [])):
+        q_id = str(uuid.uuid4())
+        db.add(QuizQuestion(
+            id=q_id,
+            quiz_id=new_quiz.id,
+            text=q_data["text"],
+            options=str(q_data["options"]),
+            correct_index=q_data["correct_index"],
+            explanation=q_data["explanation"]
+        ))
+        response_questions.append({
+            "id": q_id,
+            "text": q_data["text"],
+            "options": q_data["options"]
+        })
+        
+    await db.commit()
+    
+    return {
+        "id": new_quiz.id,
+        "title": new_quiz.title,
+        "time_limit": new_quiz.time_limit,
+        "pass_threshold": new_quiz.pass_threshold,
+        "questions": response_questions
+    }
