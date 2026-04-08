@@ -98,16 +98,7 @@ export default function TopNav() {
 
   return (
     <header className="top-nav">
-      {/* Mobile menu toggle */}
-      <motion.button
-        className="btn-icon"
-        onClick={toggleSidebar}
-        whileTap={{ scale: 0.9 }}
-        id="mobile-menu-btn"
-        aria-label="Toggle sidebar"
-      >
-        <Menu size={20} />
-      </motion.button>
+      {/* Mobile menu toggle removed to Sidebar morphing pill */}
 
       {/* Page title */}
       <AnimatePresence mode="wait">

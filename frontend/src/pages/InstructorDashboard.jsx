@@ -35,7 +35,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     <div style={{
       background: 'var(--color-bg-elevated)',
       border: '1px solid var(--color-border)',
-      borderRadius: 'var(--radius-md)',
+      borderRadius: 'var(--r-md)',
       padding: '8px 12px',
       fontSize: 13,
     }}>
@@ -106,7 +106,7 @@ export default function InstructorDashboard() {
         <p>Monitor your courses, student progress, and adaptive learning outcomes</p>
       </div>
 
-      <div className="grid-4" style={{ marginBottom: 'var(--space-xl)' }}>
+      <div className="grid-4" style={{ marginBottom: 'var(--sp-8)' }}>
         <MetricCard icon={<Users />} color="var(--color-info)" value={students.length} label="Total Students" change="API Connected" delay={2} />
         <MetricCard icon={<BookOpen />} color="var(--color-primary)" value={courses.length} label="Active Courses" change="" delay={3} />
         <MetricCard icon={<TrendingUp />} color="var(--color-accent)" value="74%" label="Avg. Completion" change="" delay={4} />
@@ -117,10 +117,10 @@ export default function InstructorDashboard() {
         <div className="animate-in animate-in-2" style={{
           background: 'rgba(239,68,68,0.08)',
           border: '1px solid rgba(239,68,68,0.3)',
-          borderRadius: 'var(--radius-lg)',
-          padding: 'var(--space-md) var(--space-lg)',
-          marginBottom: 'var(--space-xl)',
-          display: 'flex', alignItems: 'center', gap: 'var(--space-md)', flexWrap: 'wrap'
+          borderRadius: 'var(--r-lg)',
+          padding: 'var(--sp-4) var(--sp-6)',
+          marginBottom: 'var(--sp-8)',
+          display: 'flex', alignItems: 'center', gap: 'var(--sp-4)', flexWrap: 'wrap'
         }}>
           <AlertTriangle size={20} color="var(--color-error)" />
           <p style={{ margin: 0, flex: 1, color: 'var(--color-text)', fontWeight: 500 }}>
@@ -133,7 +133,7 @@ export default function InstructorDashboard() {
         </div>
       )}
 
-      <div className="grid-2" style={{ gap: 'var(--space-xl)', marginBottom: 'var(--space-xl)' }}>
+      <div className="grid-2" style={{ gap: 'var(--sp-6)', marginBottom: 'var(--sp-8)' }}>
         <div className="card animate-in animate-in-3">
           <div className="card-header">
             <h3 className="card-title">Enrollment Growth</h3>
@@ -168,13 +168,13 @@ export default function InstructorDashboard() {
       </div>
 
       <div className="animate-in animate-in-5">
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-md)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--sp-4)' }}>
           <h2 style={{ fontSize: 18 }}>Your Courses</h2>
           <Link to="/course-builder" className="btn btn-primary btn-sm">+ New Course</Link>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
           {courses.length === 0 ? <p>No courses found. Create one!</p> : courses.map(course => (
-            <div key={course.id} className="card" style={{ display: 'flex', gap: 'var(--space-lg)', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div key={course.id} className="card" style={{ display: 'flex', gap: 'var(--sp-6)', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 200 }}>
                 <h3 style={{ fontSize: 15, marginBottom: 4 }}>{course.title}</h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -189,7 +189,7 @@ export default function InstructorDashboard() {
                   <div className="progress-fill" style={{ width: `0%` }} />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
                 <button 
                   className={`btn btn-sm ${course.published ? 'btn-secondary' : 'btn-primary'}`}
                   onClick={() => handleTogglePublish(course.id, course.published)}

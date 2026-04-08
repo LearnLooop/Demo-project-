@@ -119,8 +119,8 @@ const useStore = create((set, get) => ({
     set({ theme });
     document.body.setAttribute('data-theme', theme);
   },
-  sidebarOpen: false,
-  isSidebarOpen: false,
+  sidebarOpen: window.innerWidth > 1024,
+  isSidebarOpen: window.innerWidth > 1024,
   toggleSidebar: () => set(s => ({ sidebarOpen: !s.sidebarOpen, isSidebarOpen: !s.sidebarOpen })),
   closeSidebar: () => set({ sidebarOpen: false, isSidebarOpen: false }),
 

@@ -101,7 +101,7 @@ a:hover { color: var(--color-primary-dark); }
    LAYOUT SHELL
    ================================================================ */
 
-.app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+.app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; width: 100vw; overflow-x: hidden; }
 
 /* Sidebar */
 .sidebar {
@@ -120,14 +120,36 @@ a:hover { color: var(--color-primary-dark); }
 }
 
 .main-content {
-  margin-left: var(--sidebar-w);
   flex: 1;
+  min-width: 0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: margin-left 350ms var(--ease-out);
+  transition: padding-left 350ms var(--ease-out);
   position: relative;
   z-index: 10;
+  width: 100%;
+}
+
+.mobile-overlay-visible {
+  display: block;
+}
+
+@media (min-width: 1025px) {
+  .mobile-overlay-visible {
+    display: none !important;
+  }
+}
+
+/* Sidebar Open/Close Logic */
+.app-shell.sidebar-open .main-content {
+  padding-left: 312px;
+  margin-left: 0;
+}
+
+.app-shell.sidebar-closed .main-content {
+  padding-left: 84px;
+  margin-left: 0;
 }
 
 /* Top Nav */
@@ -149,6 +171,7 @@ a:hover { color: var(--color-primary-dark); }
   padding: var(--sp-6) var(--sp-8) var(--sp-12);
   max-width: 1400px;
   width: 100%;
+  min-width: 0; /* Important for flex-shrink with recalcitrant charts */
 }
 
 /* ================================================================
@@ -412,10 +435,8 @@ a:hover { color: var(--color-primary-dark); }
    ================================================================ */
 
 @media (max-width: 1024px) {
-  :root { --sidebar-w: 0px; }
-  .sidebar { transform: translateX(-280px); width: 280px; }
-  .sidebar.open { transform: translateX(0); }
-  .main-content { margin-left: 0; }
+  .app-shell .main-content { margin-left: 0 !important; padding-left: 0 !important; }
+  .top-nav { padding-left: 84px; }
   .grid-4, .grid-3 { grid-template-columns: 1fr 1fr; }
 }
 

@@ -41,8 +41,9 @@ const pageVariants = {
 
 function AppLayout({ children }) {
   const location = useLocation();
+  const { isSidebarOpen } = useStore();
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
       <Sidebar />
       <div className="main-content">
         <TopNav />
