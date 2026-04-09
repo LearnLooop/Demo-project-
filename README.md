@@ -201,4 +201,5 @@ MIT License
 **CourseWeaver** — Built with ❤️ for adaptive learning.
 
 **Edited By Computer Student**
+**Ahanaf Aziz , Md Mufazzel Hossain , Venkata Munigonda Mastan , William Manuel, Faustino Henriques;
 
